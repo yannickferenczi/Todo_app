@@ -4,7 +4,7 @@ import json
 import os
 from datetime import date
 
-def get_data_form_file():
+def get_data_from_file():
     if os.path.exists("todo_dict.json"):
         with open("todo_dict.json", "r") as file:
             dict_todo = json.load(file)
@@ -17,7 +17,6 @@ def get_data_form_file():
 # This window pops up to create a new task (called with the button "+ Add a task"
 def open_new_task_window(main_window):  # Create the pop up window
     task_definition_window = Toplevel()
-    task_definition_window.geometry("500x300")
     task_definition_window.title("New task")
     task_definition_window.configure(bg="lightgreen")
     task_definition_window.iconbitmap("todo.ico")
@@ -25,14 +24,16 @@ def open_new_task_window(main_window):  # Create the pop up window
     new_task_frame = Frame(task_definition_window,
                                 width=100,
                                 height=100,
-                                bg="skyblue")
+                                bg="lightgreen",
+                                padx=10,
+                                pady=15)
     new_task_frame.pack()
 
     task_name_label = Label(new_task_frame,
                                     text="New task : ",
-                                    bg="darkgreen",
-                                    fg="white",
-                                    width=10)
+                                    bg="lightgreen",
+                                    width=10, 
+                                    height=2)
     task_name_label.grid(row=0, column=0)
 
     task_name_entry = Entry(new_task_frame, width=40)
@@ -40,8 +41,9 @@ def open_new_task_window(main_window):  # Create the pop up window
 
     task_deadline_label = Label(new_task_frame,
                                         text="Deadline : ",
-                                        bg="darkgreen",
-                                        fg="white")
+                                        bg="lightgreen",
+                                        width=10, 
+                                        height=2)
     task_deadline_label.grid(row=1, column=0)
 
     # START OPTION MENU TO SELECT THE DEADLINE -----------------------------------------------
@@ -70,17 +72,24 @@ def open_new_task_window(main_window):  # Create the pop up window
 
     # END OF OPTION MENU TO SELECT THE DEADLINE -----------------------------------------------
 
-    validation_button = Button(new_task_frame, text="Create", command=lambda: create_new_task(task_name_entry.get(), date(year_variable.get(), month_variable.get(), day_variable.get()), task_definition_window), width=20)
+    validation_button = Button(
+                            new_task_frame, 
+                            text="Create", 
+                            command=lambda: create_new_task(task_name_entry.get(), date(year_variable.get(), month_variable.get(), day_variable.get()), task_definition_window), 
+                            width=20,
+                            bg="darkgreen",
+                            fg="white",
+                            font="Bold")
     validation_button.grid(row=2, column=0, columnspan=5)
 
     task_definition_window.mainloop()
 
 def create_new_task(description, deadline, task_definition_window):  # add the created new task to the mapping and save it into json file
-    dict_todo, todo_number = get_data_form_file()
+    dict_todo, todo_number = get_data_from_file()
     if description:
         dict_todo[todo_number] = {
             "description": description,
-            "deadline": deadline.isoformat(),
+            "deadline": deadline.strftime("%d/%m/%Y"),
             "priority": "important",
             "status": "active",
         }
@@ -89,18 +98,13 @@ def create_new_task(description, deadline, task_definition_window):  # add the c
         json.dump(dict_todo, file, indent=4)
     task_definition_window.destroy()
 
+def change_status(status):
+    if status == "active":
+        status = "archive"
+    elif status == "archive":
+        status = "active"
+    return status
 
-
-# This is the main window of the app where :
-# - the todos are displayed and
-# - some buttons lead to other actions
-# Each todo has a unique todo_number. This number is incremented everytime a new task is created
-
-# GETTING A MAPPING OF EXISTING TODOS OR CREATING A NEW ONE :
-# (I made it a class attribute because it is easier to reach it after)
-
-
-FILTER = "important"
 
 # create the main window
 root = Tk()
@@ -112,29 +116,25 @@ root.configure(bg="lightgreen")
 options_frame = Frame(root, bg="lightgreen")
 options_frame.pack()
 
-filter_label = Label(options_frame,
-                        text=FILTER,
-                        font=14,
-                        width=50,
-                        bg= "lightgreen")
-filter_label.grid(row=0, column=1)
-
 new_task_button = Button(options_frame,
                             text="+ Add a task",
-                            font=14,
+                            font=18,
                             width=15,
                             height=2,
+                            bg="#FF0000", 
                             command=lambda: open_new_task_window(root))
 new_task_button.grid(row=0, column=3)
 
 # CREATE A FRAME TO DISPLAY THE TASKS TO DO ------------------------------------------
-tasks_list_frame = LabelFrame(root, text="Task to do", bg="skyblue")
-tasks_list_frame.pack()
-dict_todo, todo_number = get_data_form_file()
+tasks_list_frame_active = LabelFrame(root, text="Tasks to do", bg="skyblue")
+tasks_list_frame_active.pack()
+tasks_list_frame_archive = LabelFrame(root, text="Tasks done", bg="#AA8080")
+tasks_list_frame_archive.pack()
+dict_todo, todo_number = get_data_from_file()
 
 for task_number, task_parameters in dict_todo.items():
-    if task_parameters["priority"] == FILTER:
-        task_frame = LabelFrame(tasks_list_frame, bg="darkgreen", padx=30, pady=5)
+    if task_parameters["status"] == "active":
+        task_frame = LabelFrame(tasks_list_frame_active, bg="darkgreen", padx=30, pady=5)
         task_frame.pack(fill="both", expand="yes", padx=10, pady=10)
 
         var = StringVar()
@@ -142,10 +142,11 @@ for task_number, task_parameters in dict_todo.items():
                                 variable=var,
                                 onvalue="archive",
                                 offvalue="active",
-                                bg="darkgreen")
+                                bg="darkgreen",
+                                command=lambda: change_status(task_parameters["status"]))
         check_box.deselect()
         check_box.grid(row=0, column=0)
-
+        
         description_label = Label(task_frame,
                                     text=task_parameters["description"],
                                     bd=4,
@@ -153,14 +154,64 @@ for task_number, task_parameters in dict_todo.items():
                                     bg="darkgreen",
                                     fg="white",
                                     width=50,
-                                    font=("blackarial", 14))
+                                    font=("blackarial", 15))
         description_label.grid(row=0, column=1)
 
         deadline_label = Label(task_frame,
                                 text=task_parameters["deadline"],
                                 bg="darkgreen",
-                                fg="white")
-        deadline_label.grid(row=0, column=2)
+                                fg="white",
+                                font= ("Arial", 15))
+        deadline_label.grid(row=0, column=2, padx=20)
+
+        modification_icone = PhotoImage(file="modification.png")
+        modification_button = Button(task_frame, image=modification_icone, bg="#EEEEEE")
+        modification_button.grid(row=0, column=3, padx=5)
+
+        delete_icone = PhotoImage(file="trash.png")
+        delete_button = Button(task_frame, image=delete_icone, bg="#EEEEEE")
+        delete_button.grid(row=0, column=4, padx=5)
+
+    elif task_parameters["status"] == "archive":
+        task_frame = LabelFrame(tasks_list_frame_archive, bg="lightgrey", padx=30, pady=5)
+        task_frame.pack(fill="both", expand="yes", padx=10, pady=10)
+
+        var = StringVar()
+        check_box = Checkbutton(task_frame,
+                                variable=var,
+                                onvalue="archive",
+                                offvalue="active",
+                                bg="lightgrey", 
+                                fg="darkgrey", 
+                                command=lambda: change_status(task_parameters["status"]))
+        check_box.select()
+        check_box.grid(row=0, column=0)
+
+        description_label = Label(task_frame,
+                                    text=task_parameters["description"],
+                                    bd=4,
+                                    justify=LEFT,
+                                    bg="lightgrey",
+                                    fg="darkgrey", 
+                                    width=50,
+                                    font=("blackarial", 15))
+        description_label.grid(row=0, column=1)
+
+        deadline_label = Label(task_frame,
+                                text=task_parameters["deadline"],
+                                bg="lightgrey",
+                                fg="darkgrey", 
+                                font= ("Arial", 15))
+        deadline_label.grid(row=0, column=2, padx=20)
+
+        modification_icone = PhotoImage(file="modification.png")
+        modification_button = Button(task_frame, image=modification_icone, bg="lightgrey")
+        modification_button.grid(row=0, column=3, padx=5)
+
+        delete_icone = PhotoImage(file="trash.png")
+        delete_button = Button(task_frame, image=delete_icone, bg="lightgrey")
+        delete_button.grid(row=0, column=4, padx=5)
+
 root.mainloop()
 
 

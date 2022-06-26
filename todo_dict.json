@@ -9,6 +9,30 @@
         "description": "second test",
         "deadline": "2027-01-09",
         "priority": "important",
+        "status": "archive"
+    },
+    "3": {
+        "description": "Nouveau test",
+        "deadline": "2022-06-26",
+        "priority": "important",
+        "status": "active"
+    },
+    "4": {
+        "description": "Encore un test",
+        "deadline": "2022-06-26",
+        "priority": "important",
+        "status": "archive"
+    },
+    "6": {
+        "description": "New try",
+        "deadline": "26/06/2022",
+        "priority": "important",
+        "status": "active"
+    },
+    "7": {
+        "description": "New try again",
+        "deadline": "26/06/2022",
+        "priority": "important",
         "status": "active"
     }
 }
